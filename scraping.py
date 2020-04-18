@@ -3,6 +3,7 @@
 import requests
 from bs4 import BeautifulSoup
 import argparse
+from tabulate import tabulate
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Scrape products from pccomponentes")
@@ -18,10 +19,22 @@ class Product:
         self.__url = url
         self.__brand = brand
         self.__price = price
-    def print(self):
-        print("Product: " + self.__name)
-        print("Access the product in: " + self.__url)
-        print("Made by " + self.__brand + " for " + self.__price)
+    def toList(self):
+        return [self.__name, self.__brand, self.__price]
+    def toDict(self):
+        return {
+            "name": self.__name,
+            "brand": self.__brand,
+            "price": self.__price
+        }
+
+def printTable(products):
+    products_list = []
+    i = 0
+    for product in products:
+        products_list.append([str(i)] + product.toList())
+        i += 1
+    print(tabulate(products_list, headers=["","Name","brand","price"],tablefmt="fancy_grid"))
 
 def scrape(target):
     html = requests.get(target)
@@ -38,7 +51,6 @@ def main():
         target += "/buscar/?query=" + args.search
     products = scrape(target)
     if(args.print):
-        for product in products:
-            product.print()    
+        printTable(products)
 
 main()
