@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 import argparse
 from tabulate import tabulate
+from printy import printy
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Scrape products from pccomponentes")
@@ -27,6 +28,18 @@ class Product:
             "brand": self.__brand,
             "price": self.__price
         }
+    def getName(self):
+        return self.__name
+    def getBrand(self):
+        return self.__brand
+    def getPrice(self):
+        return self.__price
+    def setName(self,name):
+        self.__name = name
+    def setBrand(self,brand):
+        self.__brand = brand
+    def setPrice(self,price):
+        self.__price = price
 
 def printTable(products):
     products_list = []
@@ -34,7 +47,7 @@ def printTable(products):
     for product in products:
         products_list.append([str(i)] + product.toList())
         i += 1
-    print(tabulate(products_list, headers=["","Name","brand","price"],tablefmt="fancy_grid"))
+    printy(tabulate(products_list, headers=["","Name","brand","price"],tablefmt="fancy_grid"),"r")
 
 def scrape(target):
     html = requests.get(target)
