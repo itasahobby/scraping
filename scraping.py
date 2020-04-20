@@ -7,12 +7,14 @@ import argparse
 from tabulate import tabulate
 from printy import printy
 from printy import inputy
+from openpyxl import Workbook
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Scrape products from pccomponentes")
     parser.add_argument('-s',action="store", dest="search", help="Query to search from pccomponentes")
     parser.add_argument('-p',action="store_true", dest="print", help="Prints the results")
     parser.add_argument('-i',action="store_true", dest="interactive", help="Makes an interactive shell")
+    parser.add_argument('-d',action="store", dest="dump", help="Dumps the result into an xml", metavar="FILENAME")    
     return parser
 
 class Product:
@@ -26,6 +28,7 @@ class Product:
     def toDict(self):
         return {
             "name": self.__name,
+            "url": self.__url,
             "brand": self.__brand,
             "price": self.__price
         }
@@ -46,6 +49,14 @@ class Product:
     def setPrice(self,price):
         self.__price = price
 
+def scrape(target):
+    html = requests.get(target)
+    soup = BeautifulSoup(html.content,"html.parser")
+    products = list(map(lambda product: product.find("a"), soup.find_all("article")))
+    products_parsed = list(map(lambda product: Product(product["data-name"],target + product["href"],product["data-brand"],product["data-price"]),products))
+    return products_parsed
+
+
 def printTable(products):
     products_list = []
     i = 0
@@ -54,33 +65,31 @@ def printTable(products):
         i += 1
     printy(tabulate(products_list, headers=["","Name","brand","price"],tablefmt="fancy_grid"),"r")
 
-def scrape(target):
-    html = requests.get(target)
-    soup = BeautifulSoup(html.content,"html.parser")
-    products = list(map(lambda product: product.find("a"), soup.find_all("article")))
-    products_parsed = list(map(lambda product: Product(product["data-name"],target + product["href"],product["data-brand"],product["data-price"]),products))
-    return products_parsed
-
 def open_link(products):
     val = inputy("Enter a product number to open: ","b")
     val_int = int(val)
-    if (val_int > 0) or (val_int < len(products)):
+    if (val_int > 0) and (val_int < len(products)):
         printy(f"Opening link {products[val_int].getUrl()}","y")
         webbrowser.open(products[val_int].getUrl())
         return True
     else:
         return False
 
+def interface(args,products):
+    if(args.print):
+        printTable(products)
+    if(args.interactive and args.print):
+        if not open_link(products):
+            interface(args,products)
+
 def main():
     parser = get_parser()
     args = parser.parse_args()
     target = "https://www.pccomponentes.com" 
     if(args.search):
-        target += "/buscar/?query=" + args.search
+        target += f"/buscar/?query={args.search}" 
     products = scrape(target)
-    if(args.print):
-        printTable(products)
-    if(args.interactive and args.print):
-        open_link(products)
+    interface(args,products)
+
 
 main()
