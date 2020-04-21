@@ -8,6 +8,7 @@ from tabulate import tabulate
 from printy import printy
 from printy import inputy
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill,NamedStyle, Border, Side
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Scrape products from pccomponentes")
@@ -63,7 +64,7 @@ def printTable(products):
     for product in products:
         products_list.append([str(i)] + product.toList())
         i += 1
-    printy(tabulate(products_list, headers=["","Name","brand","price"],tablefmt="fancy_grid"),"r")
+    printy(tabulate(products_list, headers=["","Name","brand","price"],tablefmt="fancy_grid"),"y")
 
 def open_link(products):
     val = inputy("Enter a product number to open: ","b")
@@ -75,12 +76,54 @@ def open_link(products):
     else:
         return False
 
+def printerr(url):
+    printy(f"There is no results for {url}","r")
+
 def interface(args,products):
     if(args.print):
         printTable(products)
     if(args.interactive and args.print):
         if not open_link(products):
             interface(args,products)
+
+def get_header_style():
+    style = NamedStyle("header")
+    style.fill = PatternFill("solid", fgColor="7FCEEF")
+    bd = Side(style="thick", color="000000")
+    style.border = Border(left=bd, top=bd, right=bd, bottom=bd)
+    return style
+
+def get_product_style():
+    style = NamedStyle("product")
+    style.fill = PatternFill("solid", fgColor="BFE7F7")
+    bd = Side(style="thin",color="000000")
+    style.border = Border(left=bd, top=bd, right=bd, bottom=bd)
+    return style
+
+def dump(filename,products):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "PcComponentes"
+    first_product = products[0].toDict()
+    header = [*first_product]
+    column = 1
+    header_style = get_header_style()
+    for val in header:
+        sheet.cell(1,column).value=val.capitalize()
+        sheet.cell(1,column).style = header_style
+        column += 1
+    row = 2
+    product_style = get_product_style()
+    for product in products:
+        sheet.cell(row,1).value=product.getName()
+        sheet.cell(row,2).value=product.getUrl()
+        sheet.cell(row,3).value=product.getBrand()
+        sheet.cell(row,4).value=product.getPrice()
+        for i in range(1,5):
+            sheet.cell(row,i).style=product_style
+        row += 1
+    workbook.save(f"{filename}.xlsx")
+
 
 def main():
     parser = get_parser()
@@ -89,7 +132,10 @@ def main():
     if(args.search):
         target += f"/buscar/?query={args.search}" 
     products = scrape(target)
-    interface(args,products)
-
+    if(len(products) > 0):
+        interface(args,products)
+        dump(args.dump,products)
+    else:
+        printerr(target)
 
 main()
