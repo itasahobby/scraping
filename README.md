@@ -1,6 +1,7 @@
 # Set up
 First clone the repository:
-`git clone https://github.com/itasahobby/scraping.`
+`git clone https://github.com/itasahobby/scraping.`  
+
 Install all dependencies:
 `pip3 install -r requirements.txt`
 
